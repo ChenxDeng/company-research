@@ -1,4 +1,5 @@
 import type { CompensationSection } from "@/lib/types";
+import { SourceLinks } from "./SourceLinks";
 
 interface SalaryCardProps {
   section: CompensationSection;
@@ -14,7 +15,6 @@ export function SalaryCard({ section, index }: SalaryCardProps) {
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       <div className="card-icon">{num} / {section.title}</div>
-      <div className="card-title">{section.title}</div>
       <div className="card-body">
         {section.salary.length > 0 && (
           <div className="salary-grid">
@@ -28,7 +28,7 @@ export function SalaryCard({ section, index }: SalaryCardProps) {
           </div>
         )}
         {section.workIntensity && (
-          <div style={{ margin: "14px 0", fontSize: 13, color: "var(--text-secondary)" }}>
+          <div style={{ margin: "10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
             <strong>工作强度：</strong>{section.workIntensity}
           </div>
         )}
@@ -50,7 +50,7 @@ export function SalaryCard({ section, index }: SalaryCardProps) {
         )}
       </div>
       {section.sources.length > 0 && (
-        <div className="source-tag">{section.sources.join(" · ")}</div>
+        <SourceLinks sources={section.sources} />
       )}
     </div>
   );

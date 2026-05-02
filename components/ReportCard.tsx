@@ -1,4 +1,5 @@
 import type { ReportSection } from "@/lib/types";
+import { SourceLinks } from "./SourceLinks";
 
 interface ReportCardProps {
   section: ReportSection;
@@ -42,7 +43,7 @@ export function ReportCard({ section, index, fullWidth }: ReportCardProps) {
         )}
       </div>
       {section.sources.length > 0 && (
-        <div className="source-tag">{section.sources.join(" · ")}</div>
+        <SourceLinks sources={section.sources} />
       )}
     </div>
   );

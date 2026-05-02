@@ -1,8 +1,19 @@
+export interface Source {
+  name: string;
+  url: string;
+}
+
+export interface CityDetail {
+  city: string;
+  function: string;
+  percent: string;
+}
+
 export interface ReportSection {
   id: string;
   title: string;
   content: string;
-  sources: string[];
+  sources: Source[];
   tags?: string[];
   prediction?: string;
 }
@@ -13,6 +24,7 @@ export interface OrganizationSection extends ReportSection {
   structure: string;
   roles: { name: string; percent: number }[];
   locations: string[];
+  cityDetails: CityDetail[];
 }
 
 export interface SalaryItem {

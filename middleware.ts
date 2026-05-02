@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const rateLimit = new Map<string, { count: number; resetTime: number }>();
-const MAX_REQUESTS = 10;
+const MAX_REQUESTS = 3;
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export function middleware(request: NextRequest) {

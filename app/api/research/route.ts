@@ -1,5 +1,6 @@
 import { conductResearch } from "@/lib/deepseek";
-import type { ResearchEvent } from "@/lib/types";
+import { logSearch } from "@/lib/db";
+import type { ResearchEvent, ResearchReport } from "@/lib/types";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -11,6 +12,11 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -29,6 +35,19 @@ export async function POST(request: Request) {
           position?.trim() || undefined,
           (message) => send({ type: "status", message }),
         );
+
+        // Log search to database
+        await logSearch({
+          id: crypto.randomUUID(),
+          ip,
+          company: company.trim(),
+          position: position?.trim() || undefined,
+          resultCompany: report.company,
+          timestamp: Date.now(),
+          sectionsCount: report.sections.length,
+        }).catch(() => {
+          // Don't fail the request if logging fails
+        });
 
         send({ type: "report", data: report });
       } catch (error) {

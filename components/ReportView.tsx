@@ -1,5 +1,6 @@
 import type { ResearchReport, OrganizationSection, CompensationSection, ConcernsSection } from "@/lib/types";
 import { ReportCard } from "./ReportCard";
+import { OrganizationCard } from "./OrganizationCard";
 import { SalaryCard } from "./SalaryCard";
 import { ConcernsCard } from "./ConcernsCard";
 
@@ -29,7 +30,7 @@ export function ReportView({ report }: ReportViewProps) {
           switch (section.id) {
             case "organization":
               return (
-                <ReportCard
+                <OrganizationCard
                   key={section.id}
                   section={section as OrganizationSection}
                   index={i}
