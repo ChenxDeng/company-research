@@ -2,39 +2,49 @@
 
 "use client";
 
-function inlineComputedStyles(source: HTMLElement, target: HTMLElement) {
-  const sourceChildren = source.querySelectorAll("*");
-  const targetChildren = target.querySelectorAll("*");
+function forceVisible(element: HTMLElement) {
+  // Force the element and all children to be fully visible
+  element.style.opacity = "1";
+  element.style.animation = "none";
+  element.style.transform = "none";
+  element.style.transition = "none";
 
-  // Copy styles for the root element
-  copyStyles(source, target);
-
-  // Copy styles for all children
-  for (let i = 0; i < sourceChildren.length; i++) {
-    copyStyles(sourceChildren[i] as HTMLElement, targetChildren[i] as HTMLElement);
-  }
+  const children = element.querySelectorAll("*") as NodeListOf<HTMLElement>;
+  children.forEach((child) => {
+    child.style.opacity = "1";
+    child.style.animation = "none";
+    child.style.transform = "none";
+    child.style.transition = "none";
+  });
 }
 
-function copyStyles(source: HTMLElement, target: HTMLElement) {
-  const computed = getComputedStyle(source);
-  const properties = [
-    "color", "background-color", "background", "border", "border-color",
-    "border-top", "border-right", "border-bottom", "border-left",
-    "border-radius", "box-shadow", "text-shadow", "opacity",
-    "font-size", "font-weight", "font-family", "line-height",
-    "padding", "margin", "display", "flex-direction", "gap",
-    "align-items", "justify-content", "grid-template-columns",
-    "text-align", "letter-spacing", "text-transform",
-    "width", "max-width", "min-height", "overflow",
+function inlineColors(source: HTMLElement, target: HTMLElement) {
+  const colorProps = [
+    "color", "background-color", "background",
+    "border-color", "border-top-color", "border-right-color",
+    "border-bottom-color", "border-left-color",
+    "border-radius",
+    "font-size", "font-weight", "line-height",
+    "padding", "text-align", "letter-spacing",
   ];
 
-  for (const prop of properties) {
-    try {
-      target.style.setProperty(prop, computed.getPropertyValue(prop));
-    } catch {
-      // Some properties can't be set
+  const copyToElement = (src: HTMLElement, tgt: HTMLElement) => {
+    const computed = getComputedStyle(src);
+    for (const prop of colorProps) {
+      try {
+        tgt.style.setProperty(prop, computed.getPropertyValue(prop));
+      } catch {
+        // skip
+      }
     }
-  }
+  };
+
+  copyToElement(source, target);
+  const srcChildren = source.querySelectorAll("*") as NodeListOf<HTMLElement>;
+  const tgtChildren = target.querySelectorAll("*") as NodeListOf<HTMLElement>;
+  srcChildren.forEach((src, i) => {
+    if (tgtChildren[i]) copyToElement(src, tgtChildren[i]);
+  });
 }
 
 export function DownloadButton() {
@@ -45,17 +55,27 @@ export function DownloadButton() {
 
     const companyName = document.querySelector(".company-name")?.textContent?.trim() || "公司";
 
-    // Clone element and inline all computed styles
+    // Deep clone
     const clone = element.cloneNode(true) as HTMLElement;
-    inlineComputedStyles(element, clone);
 
-    // Set explicit background and dimensions
+    // Inline color styles to resolve CSS variables
+    inlineColors(element, clone);
+
+    // Force all elements fully visible (remove animation opacity)
+    forceVisible(clone);
+
+    // Set explicit styles for the container
     clone.style.width = element.offsetWidth + "px";
     clone.style.background = "#faf9f7";
     clone.style.padding = "20px";
     clone.style.boxSizing = "border-box";
+    clone.style.opacity = "1";
 
-    // Add to DOM off-screen for rendering
+    // Hide the download button inside the clone
+    const btnInClone = clone.querySelector(".download-section");
+    if (btnInClone) (btnInClone as HTMLElement).style.display = "none";
+
+    // Add to DOM off-screen
     clone.style.position = "absolute";
     clone.style.left = "-9999px";
     clone.style.top = "0";
@@ -70,6 +90,7 @@ export function DownloadButton() {
         useCORS: true,
         backgroundColor: "#faf9f7",
         logging: false,
+        removeContainer: true,
       },
       jsPDF: {
         unit: "mm" as const,

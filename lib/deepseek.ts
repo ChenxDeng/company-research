@@ -129,13 +129,34 @@ function parseReport(content: string, company: string): ResearchReport {
 
   try {
     const parsed = JSON.parse(jsonStr);
+
+    // Normalize sources: handle both string[] and {name, url}[] formats
+    const normalizeSources = (sources: unknown[]): { name: string; url: string }[] => {
+      if (!Array.isArray(sources)) return [];
+      return sources.map((s) => {
+        if (typeof s === "string") {
+          return { name: s, url: "" };
+        }
+        if (s && typeof s === "object" && "name" in s) {
+          const obj = s as Record<string, unknown>;
+          return { name: String(obj.name || ""), url: String(obj.url || "") };
+        }
+        return { name: String(s), url: "" };
+      });
+    };
+
+    const sections = (parsed.sections || []).map((section: Record<string, unknown>) => ({
+      ...section,
+      sources: normalizeSources(section.sources as unknown[]),
+      cityDetails: section.cityDetails || [],
+    }));
+
     return {
       company: parsed.company || company,
       summary: parsed.summary || "",
-      sections: parsed.sections || [],
+      sections,
     };
   } catch (e) {
-    // Log the raw content for debugging (server-side only)
     console.error("Failed to parse JSON. Raw content (first 500 chars):", content.substring(0, 500));
     throw new Error(`Failed to parse AI response as JSON: ${e instanceof Error ? e.message : "unknown error"}`);
   }
