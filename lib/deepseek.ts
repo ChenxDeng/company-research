@@ -45,6 +45,9 @@ export async function conductResearch(
     { role: "user", content: `请帮我调研「${company}」这家公司。` },
   ];
 
+  // Collect real URLs from Tavily search results to enrich sources later
+  const collectedUrls: { title: string; url: string }[] = [];
+
   const maxRounds = 8;
 
   for (let round = 0; round < maxRounds; round++) {
@@ -82,7 +85,7 @@ export async function conductResearch(
     // If no tool calls, we have the final answer
     if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
       onStatus?.("正在生成报告...");
-      return parseReport(assistantMsg.content, company);
+      return parseReport(assistantMsg.content, company, collectedUrls);
     }
 
     // Execute tool calls
@@ -92,6 +95,14 @@ export async function conductResearch(
         onStatus?.(`正在搜索：${args.query}`);
 
         const results = await tavilySearch(args.query);
+
+        // Collect real URLs for source enrichment
+        for (const r of results) {
+          if (r.url && r.title) {
+            collectedUrls.push({ title: r.title, url: r.url });
+          }
+        }
+
         const formattedResults = results
           .map(
             (r, i) =>
@@ -111,7 +122,11 @@ export async function conductResearch(
   throw new Error("Research exceeded maximum rounds");
 }
 
-function parseReport(content: string, company: string): ResearchReport {
+function parseReport(
+  content: string,
+  company: string,
+  collectedUrls: { title: string; url: string }[],
+): ResearchReport {
   let jsonStr = content.trim();
 
   // Try extracting from markdown code block
@@ -130,16 +145,30 @@ function parseReport(content: string, company: string): ResearchReport {
   try {
     const parsed = JSON.parse(jsonStr);
 
+    // Build a lookup map from source name -> real URL
+    const urlMap = new Map<string, string>();
+    for (const item of collectedUrls) {
+      urlMap.set(item.title.toLowerCase(), item.url);
+    }
+
     // Normalize sources: handle both string[] and {name, url}[] formats
+    // Enrich with real URLs from Tavily search results when missing
     const normalizeSources = (sources: unknown[]): { name: string; url: string }[] => {
       if (!Array.isArray(sources)) return [];
       return sources.map((s) => {
         if (typeof s === "string") {
-          return { name: s, url: "" };
+          const realUrl = urlMap.get(s.toLowerCase()) || "";
+          return { name: s, url: realUrl };
         }
         if (s && typeof s === "object" && "name" in s) {
           const obj = s as Record<string, unknown>;
-          return { name: String(obj.name || ""), url: String(obj.url || "") };
+          const name = String(obj.name || "");
+          let url = String(obj.url || "");
+          // If URL is empty, try to find a matching URL from search results
+          if (!url && name) {
+            url = urlMap.get(name.toLowerCase()) || "";
+          }
+          return { name, url };
         }
         return { name: String(s), url: "" };
       });
