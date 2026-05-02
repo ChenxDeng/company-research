@@ -43,6 +43,8 @@ export async function POST(request: Request) {
           company: company.trim(),
           position: position?.trim() || undefined,
           resultCompany: report.company,
+          summary: report.summary,
+          sections: report.sections,
           timestamp: Date.now(),
           sectionsCount: report.sections.length,
         }).catch(() => {

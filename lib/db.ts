@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import type { AnySection } from "./types";
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
@@ -11,17 +12,16 @@ export interface SearchLog {
   company: string;
   position?: string;
   resultCompany: string;
+  summary: string;
+  sections: AnySection[];
   timestamp: number;
   sectionsCount: number;
 }
 
 export async function logSearch(log: SearchLog): Promise<void> {
   try {
-    // Store in a list (most recent first)
     await redis.lpush("search_logs", JSON.stringify(log));
-    // Keep only last 1000 entries
     await redis.ltrim("search_logs", 0, 999);
-    // Also increment counter
     await redis.incr("total_searches");
   } catch (error) {
     console.error("Failed to log search:", error);
