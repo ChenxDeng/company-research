@@ -102,7 +102,7 @@ export default function Home() {
       {report && (
         <>
           <ReportView report={report} />
-          <DownloadButton />
+          <DownloadButton report={report} />
         </>
       )}
 
