@@ -63,6 +63,7 @@ export async function conductResearch(
           messages,
           tools: TOOLS,
           temperature: 0.3,
+          response_format: { type: "json_object" },
         }),
       },
     );
@@ -111,11 +112,19 @@ export async function conductResearch(
 }
 
 function parseReport(content: string, company: string): ResearchReport {
-  // Extract JSON from response (handle markdown code blocks)
   let jsonStr = content.trim();
-  const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[1].trim();
+
+  // Try extracting from markdown code block
+  const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    jsonStr = codeBlockMatch[1].trim();
+  }
+
+  // Try finding JSON object boundaries
+  const firstBrace = jsonStr.indexOf("{");
+  const lastBrace = jsonStr.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
   }
 
   try {
@@ -125,7 +134,9 @@ function parseReport(content: string, company: string): ResearchReport {
       summary: parsed.summary || "",
       sections: parsed.sections || [],
     };
-  } catch {
-    throw new Error("Failed to parse AI response as JSON");
+  } catch (e) {
+    // Log the raw content for debugging (server-side only)
+    console.error("Failed to parse JSON. Raw content (first 500 chars):", content.substring(0, 500));
+    throw new Error(`Failed to parse AI response as JSON: ${e instanceof Error ? e.message : "unknown error"}`);
   }
 }

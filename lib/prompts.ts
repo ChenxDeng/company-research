@@ -9,7 +9,7 @@ export function buildSystemPrompt(company: string, position?: string): string {
 
 ## 报告要求
 
-请生成以下 JSON 格式的报告（不要输出其他内容，只输出 JSON）：
+请生成以下 JSON 格式的报告。你的回复必须是一个合法的 JSON 对象，不要包含任何其他文字、解释或 markdown 标记：
 
 {
   "company": "${company}",
